@@ -1,13 +1,11 @@
+dotenv
 numpy
 streamlit
 torch
 pillow
 scikit-learn
 torchvision
---extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cpu/
 paddlepaddle
 paddleocr
-huggingface_hub
---extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cpu
-llama-cpp-python
 kagglehub
+requests

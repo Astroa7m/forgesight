@@ -6,7 +6,7 @@ import torch
 from PIL import Image, ImageDraw
 from paddleocr import PaddleOCR
 
-from detection_helpers import build_model, get_transform, load_llm, get_llm_summary, compute_ela
+from detection_helpers import build_model, get_transform, get_llm_summary, compute_ela
 from extractors import extract_vendor, extract_date, extract_total
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
@@ -30,11 +30,6 @@ def load_everything():
     ocr_engine = load_ocr_model()
 
     return model, data["clf"], data.get("bbox_lookup", {}), ocr_engine
-
-
-@st.cache_resource
-def get_llm():
-    return load_llm()
 
 
 st.set_page_config(page_title="Receipt Forgery Detector", page_icon="🔍")
@@ -114,7 +109,7 @@ with col2:
 st.divider()
 st.subheader("🧠 AI Analysis")
 with st.spinner("Generating analysis..."):
-    summary = get_llm_summary(get_llm(), vendor, date, total, final_forged, ocr_text)
+    summary = get_llm_summary(vendor, date, total, final_forged, ocr_text)
 st.info(summary)
 
 # output = {
@@ -124,4 +119,3 @@ st.info(summary)
 #     "total": total,
 #     "is_forged": int(final_forged),
 # }
-

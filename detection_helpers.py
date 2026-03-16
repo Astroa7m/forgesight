@@ -1,11 +1,14 @@
 import io
+import os
 
+import requests
 import torch
 from PIL import ImageChops, ImageEnhance, Image
-from huggingface_hub import hf_hub_download
-from llama_cpp import Llama
+from dotenv import load_dotenv
 from torchvision import models
 from torchvision import transforms
+
+load_dotenv()
 
 
 def build_model():
@@ -34,39 +37,32 @@ def compute_ela(img, quality=75, amplify=10):
     return ela
 
 
-def load_llm():
-    model_path = hf_hub_download(
-        repo_id="Qwen/Qwen2.5-0.5B-Instruct-GGUF",
-        filename="qwen2.5-0.5b-instruct-q4_k_m.gguf",
-    )
-    return Llama(model_path=model_path, n_ctx=512, n_threads=4, verbose=False, chat_format="chatml")
-
-
-def get_llm_summary(llm, vendor, date, total, is_forged, ocr_text):
+def get_llm_summary(vendor, date, total, is_forged, ocr_text):
+    verdict = "FORGED/SUSPICIOUS" if is_forged else "AUTHENTIC"
     try:
-        verdict = "FORGED/SUSPICIOUS" if is_forged else "AUTHENTIC"
-
-        response = llm.create_chat_completion(
-            messages=[
-                {
-                    "role": "system",
-                    "content": "You are a document fraud analyst. Give short, specific analysis only."
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"This receipt was classified as {verdict}.\n"
+        response = requests.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {os.getenv("CHAT_GROQ_API_KEY")}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "model": "llama-3.1-8b-instant",
+                "messages": [
+                    {"role": "system", "content": "You are a document fraud analyst. Be brief and specific."},
+                    {"role": "user", "content": (
+                        f"This receipt is {verdict}.\n"
                         f"Vendor: {vendor or 'not found'}\n"
                         f"Date: {date or 'not found'}\n"
                         f"Total: {total or 'not found'}\n"
-                        f"OCR text (first 300 chars):\n{ocr_text[:300]}\n\n"
-                        f"In 2-3 sentences, explain specifically why this receipt is {verdict}."
-                    )
-                }
-            ],
-            max_tokens=150,
-            temperature=0.3,
+                        f"OCR text: {ocr_text[:300]}\n\n"
+                        f"In 2-3 sentences explain why this receipt is {verdict}."
+                    )}
+                ],
+                "max_tokens": 150,
+            },
+            timeout=30,
         )
-        return response["choices"][0]["message"]["content"].strip()
+        return response.json()["choices"][0]["message"]["content"].strip()
     except Exception as e:
-        return f"Summary unavailable: {e}"
+        return f"AI summary unavailable: {e}"
