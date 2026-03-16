@@ -5,7 +5,7 @@ torch
 pillow
 scikit-learn
 torchvision
-paddlepaddle
-paddleocr
+paddlepaddle==3.2.0
+paddleocr==3.3.0
 kagglehub
 requests
