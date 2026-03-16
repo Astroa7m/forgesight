@@ -26,7 +26,12 @@ def load_ocr_model():
         import easyocr
         return ("easy", easyocr.Reader(["en"], gpu=False))
     from paddleocr import PaddleOCR
-    return ("paddle", PaddleOCR(use_angle_cls=True, lang='en'))
+    return ("paddle", PaddleOCR(
+        lang="en",
+        use_doc_orientation_classify=False,
+        use_doc_unwarping=False,
+        use_textline_orientation=False,
+    ))
 
 
 @st.cache_resource
