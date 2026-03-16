@@ -5,3 +5,4 @@ __pycache__/
 tmp_work/
 .gitignore
 .dockerignore
+data/
