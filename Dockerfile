@@ -1,10 +1,12 @@
 FROM python:3.13-slim
 
-# install system dependencies needed by opencv and paddleocr
 RUN apt-get update && apt-get install -y \
     libglib2.0-0 \
-    libgl1-mesa-glx \
+    libgl1 \
     libgomp1 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -17,7 +19,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY app.py .
 COPY solution.py .
 COPY extractors.py .
-COPY model_helpers.py .
 COPY detection_helpers.py .
 COPY regex_helper.py .
 
