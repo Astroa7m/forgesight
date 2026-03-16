@@ -1,10 +1,11 @@
+import os
 import pickle
 
 import numpy as np
 import streamlit as st
 import torch
 from PIL import Image, ImageDraw
-from paddleocr import PaddleOCR
+from dotenv import load_dotenv
 
 from detection_helpers import build_model, get_transform, get_llm_summary, compute_ela
 from extractors import extract_vendor, extract_date, extract_total
@@ -12,10 +13,20 @@ from extractors import extract_vendor, extract_date, extract_total
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 MODEL_FILE = "forgery_model.pkl"  # could come from solution:train but what if the `work_dir` changed? let's have our own trained model form the train notebook
 
+load_dotenv()
+
+USE_EASYOCR = os.environ.get("USE_EASYOCR", "false").lower() == "true"
+
 
 @st.cache_resource
 def load_ocr_model():
-    return PaddleOCR(use_angle_cls=True, lang='en')
+    if USE_EASYOCR:  # only true on streamlit cloud env
+        # paddle ocr had plenty of error and open issues for streamlit cloud
+        # let's fallback to pure python's easyocr lib instrea
+        import easyocr
+        return ("easy", easyocr.Reader(["en"], gpu=False))
+    from paddleocr import PaddleOCR
+    return ("paddle", PaddleOCR(use_angle_cls=True, lang='en'))
 
 
 @st.cache_resource
@@ -27,15 +38,15 @@ def load_everything():
     with open(MODEL_FILE, "rb") as f:
         data = pickle.load(f)
 
-    ocr_engine = load_ocr_model()
+    engine_type, ocr_engine = load_ocr_model()
 
-    return model, data["clf"], data.get("bbox_lookup", {}), ocr_engine
+    return model, data["clf"], data.get("bbox_lookup", {}), engine_type, ocr_engine
 
 
 st.set_page_config(page_title="Receipt Forgery Detector", page_icon="🔍")
 st.title("Receipt Forgery Detector")
 
-model, clf, bbox_lookup, ocr_engine = load_everything()
+model, clf, bbox_lookup, engine_type, ocr_engine = load_everything()
 
 # uploading
 uploaded = st.file_uploader("Upload a receipt image", type=["png", "jpg", "jpeg"])
@@ -48,14 +59,18 @@ pil = Image.open(uploaded).convert("RGB")
 with st.spinner("Running OCR..."):
     img_array = np.array(pil)
 
-    result = ocr_engine.predict(img_array)
-
-    lines = []
-    for res in result:
-        for box_info in res["rec_texts"]:
-            lines.append(box_info)
+    if engine_type == 'paddle':
+        result = ocr_engine.predict(img_array)
+        lines = []
+        for res in result:
+            for box_info in res["rec_texts"]:
+                lines.append(box_info)
+    else:
+        result = ocr_engine.readtext(img_array)
+        lines = [res[1] for res in result]  # res = (bbox, text, confidence)
 
     ocr_text = "\n".join(lines)
+    # print(f"reuslt from {engine_type}")
     # print(ocr_text)
 vendor = extract_vendor(lines)
 date = extract_date(ocr_text)
