@@ -27,11 +27,12 @@ def load_ocr_model():
         return ("easy", easyocr.Reader(["en"], gpu=False))
     from paddleocr import PaddleOCR
     return ("paddle", PaddleOCR(
-        lang="en",
+        # lang="en",
         use_doc_orientation_classify=False,
         use_doc_unwarping=False,
         use_textline_orientation=False,
-        text_detection_model_name="PP-OCRv5_mobile_det",
+        text_detection_model_name="PP-OCRv4_mobile_det",
+        text_recognition_model_name="PP-OCRv4_mobile_rec",
     ))
 
 
@@ -61,6 +62,11 @@ if not uploaded:
 
 # converting the image to the same format we used during training
 pil = Image.open(uploaded).convert("RGB")
+
+MAX_SIZE = 2000
+if max(pil.size) > MAX_SIZE:
+    ratio = MAX_SIZE / max(pil.size)
+    pil = pil.resize((int(pil.width * ratio), int(pil.height * ratio)), Image.Resampling.LANCZOS)
 
 with st.spinner("Running OCR..."):
     img_array = np.array(pil)
