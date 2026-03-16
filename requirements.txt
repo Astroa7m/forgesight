@@ -1,0 +1,12 @@
+numpy
+streamlit
+torch
+pillow
+scikit-learn
+torchvision
+--extra-index-url https://www.paddlepaddle.org.cn/packages/stable/cpu/
+paddlepaddle
+paddleocr
+huggingface_hub
+llama-cpp-python
+kagglehub
