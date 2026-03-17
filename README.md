@@ -95,7 +95,7 @@ docker run -p 8501:8501 forgesight
 
 Open `http://localhost:8501`.
 
-> The Docker image includes a demo Groq API key for the LLM summary feature. No additional configuration needed.
+> The Docker image includes a demo Groq API key for the LLM summary feature. No additional configuration needed. Just to make it easier for the judges, and it will be removed after evaluation. 
 
 ---
 
